@@ -1,0 +1,16 @@
+# Archivo: devops-library/.github/workflows/java-standard.yml
+name: Java Standard CI
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        required: false
+        type: string
+        default: '17'
+      build-command:
+        required: true
+        type: string
+    secrets:
+      GCP_PROJECT_ID:
+        required: true
