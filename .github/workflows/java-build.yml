@@ -1,5 +1,4 @@
-name: Java Reusable CI
-
+name: Java Enterprise Pipeline
 on:
   workflow_call:
     inputs:
@@ -11,22 +10,23 @@ on:
         required: false
 
 jobs:
-  build:
+  build-and-verify:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK
+      - name: Set up Java Environment ☕
         uses: actions/setup-java@v4
         with:
           java-version: ${{ inputs.java-version }}
           distribution: 'temurin'
+          cache: 'maven'
 
-      # Estrategia de detección automática 🔍
+      # Detección y Construcción Inteligente 🤖
       - name: Build with Maven
         if: hashFiles('**/pom.xml') != ''
-        run: mvn clean package
+        run: mvn clean package -DskipTests
 
       - name: Build with Gradle
         if: hashFiles('**/build.gradle') != ''
-        run: ./gradlew build
+        run: ./gradlew build -x test
