@@ -1,8 +1,23 @@
 # Archivo: devops-library/.github/workflows/java-standard.yml
+# name: Java-Standard-CI
+# on:
+#  workflow_call:
+#   inputs:
+#       java-version:
+#         required: false
+#         type: string
+#         default: '17'
+#       build-command:
+#         required: true
+#         type: string
+#    secrets:
+#     GCP_PROJECT_ID:
+#       required: true
 name: Java-Standard-CI
-on:
- workflow_call:
-  inputs:
+
+on: # <--- Asegúrate de que no tenga espacios al inicio
+  workflow_call:
+    inputs:
       java-version:
         required: false
         type: string
@@ -10,6 +25,20 @@ on:
       build-command:
         required: true
         type: string
-   secrets:
-    GCP_PROJECT_ID:
-      required: true
+    secrets:
+      GCP_PROJECT_ID:
+        required: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Build with Maven
+        run: ${{ inputs.build-command }}

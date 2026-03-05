@@ -1,0 +1,32 @@
+name: Java Reusable CI
+
+on:
+  workflow_call:
+    inputs:
+      java-version:
+        type: string
+        default: '17'
+    secrets:
+      GCP_PROJECT_ID:
+        required: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK
+        uses: actions/setup-java@v4
+        with:
+          java-version: ${{ inputs.java-version }}
+          distribution: 'temurin'
+
+      # Estrategia de detección automática 🔍
+      - name: Build with Maven
+        if: hashFiles('**/pom.xml') != ''
+        run: mvn clean package
+
+      - name: Build with Gradle
+        if: hashFiles('**/build.gradle') != ''
+        run: ./gradlew build
