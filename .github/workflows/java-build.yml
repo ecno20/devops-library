@@ -1,32 +1,78 @@
-name: Java Enterprise Pipeline
+name: Java Standard CI/CD
+
 on:
   workflow_call:
     inputs:
       java-version:
         type: string
         default: '17'
-    secrets:
-      GCP_PROJECT_ID:
-        required: false
 
 jobs:
-  build-and-verify:
+  build-and-scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Java Environment ☕
+      - name: Set up JDK ☕
         uses: actions/setup-java@v4
         with:
           java-version: ${{ inputs.java-version }}
           distribution: 'temurin'
           cache: 'maven'
 
-      # Detección y Construcción Inteligente 🤖
-      - name: Build with Maven
+      - name: Build with Maven 🏗️
         if: hashFiles('**/pom.xml') != ''
         run: mvn clean package -DskipTests
 
-      - name: Build with Gradle
-        if: hashFiles('**/build.gradle') != ''
-        run: ./gradlew build -x test
+      # --- SIMULACIÓN DE SEGURIDAD ---
+      - name: Checkmarx Security Scan 🛡️
+        run: |
+          echo "Iniciando escaneo de seguridad en el código fuente..."
+          # Simulamos un análisis: si el resultado fuera menor a 80, fallaría
+          SCORE=100
+          echo "Análisis completado. Score: $SCORE/100"
+          if [ $SCORE -lt 80 ]; then exit 1; fi
+
+  deploy-to-prod:
+    needs: build-and-scan
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    # Aquí conectamos con el Environment que creaste
+    environment: production 
+    steps:
+      - name: Deploy to GCP 🚀
+        run: |
+          echo "Desplegando en Google Cloud Platform - Producción"
+          echo "Estado: Exitoso"
+# name: Java Enterprise Pipeline
+# on:
+#   workflow_call:
+#     inputs:
+#       java-version:
+#         type: string
+#         default: '17'
+#     secrets:
+#       GCP_PROJECT_ID:
+#         required: false
+
+# jobs:
+#   build-and-verify:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - name: Set up Java Environment ☕
+#         uses: actions/setup-java@v4
+#         with:
+#           java-version: ${{ inputs.java-version }}
+#           distribution: 'temurin'
+#           cache: 'maven'
+
+#       # Detección y Construcción Inteligente 🤖
+#       - name: Build with Maven
+#         if: hashFiles('**/pom.xml') != ''
+#         run: mvn clean package -DskipTests
+
+#       - name: Build with Gradle
+#         if: hashFiles('**/build.gradle') != ''
+#         run: ./gradlew build -x test
