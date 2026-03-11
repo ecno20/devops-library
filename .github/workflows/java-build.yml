@@ -8,6 +8,7 @@ on:
         default: '17'
 
 jobs:
+  # --- BLOQUE DE CONSTRUCCIÓN Y SEGURIDAD ---
   build-and-scan:
     runs-on: ubuntu-latest
     steps:
@@ -24,27 +25,84 @@ jobs:
         if: hashFiles('**/pom.xml') != ''
         run: mvn clean package -DskipTests
 
-      # --- SIMULACIÓN DE SEGURIDAD ---
       - name: Checkmarx Security Scan 🛡️
         run: |
-          echo "Iniciando escaneo de seguridad en el código fuente..."
-          # Simulamos un análisis: si el resultado fuera menor a 80, fallaría
+          echo "Iniciando escaneo de seguridad..."
           SCORE=100
           echo "Análisis completado. Score: $SCORE/100"
           if [ $SCORE -lt 80 ]; then exit 1; fi
 
+  # --- BLOQUE DE DESPLIEGUE A QA (AUTOMÁTICO EN STAGING) ---
+  deploy-to-qa:
+    needs: build-and-scan
+    if: github.ref == 'refs/heads/staging'
+    runs-on: ubuntu-latest
+    environment: staging
+    steps:
+      - name: Deploy to GCP QA 🧪
+        run: |
+          echo "Conectando a GCP Project: QA-PROJECT-123"
+          echo "Desplegando Microservicio en entorno de Pruebas..."
+          echo "URL: https://qa.saludoservice.com"
+
+  # --- BLOQUE DE DESPLIEGUE A PRODUCCIÓN (MANUAL EN MAIN) ---
   deploy-to-prod:
     needs: build-and-scan
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
-    # Aquí conectamos con el Environment que creaste
-    environment: production 
+    environment: production
     steps:
       - name: Deploy to GCP 🚀
         run: |
           echo "Desplegando en Google Cloud Platform - Producción"
           echo "Estado: Exitoso"
-# name: Java Enterprise Pipeline
+# name: Java Standard CI/CD Parte 2>> incluye construcción más autorización en Prod
+
+# on:
+#   workflow_call:
+#     inputs:
+#       java-version:
+#         type: string
+#         default: '17'
+
+# jobs:
+#   build-and-scan:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - name: Set up JDK ☕
+#         uses: actions/setup-java@v4
+#         with:
+#           java-version: ${{ inputs.java-version }}
+#           distribution: 'temurin'
+#           cache: 'maven'
+
+#       - name: Build with Maven 🏗️
+#         if: hashFiles('**/pom.xml') != ''
+#         run: mvn clean package -DskipTests
+
+#       # --- SIMULACIÓN DE SEGURIDAD ---
+#       - name: Checkmarx Security Scan 🛡️
+#         run: |
+#           echo "Iniciando escaneo de seguridad en el código fuente..."
+#           # Simulamos un análisis: si el resultado fuera menor a 80, fallaría
+#           SCORE=100
+#           echo "Análisis completado. Score: $SCORE/100"
+#           if [ $SCORE -lt 80 ]; then exit 1; fi
+
+#   deploy-to-prod:
+#     needs: build-and-scan
+#     if: github.ref == 'refs/heads/main'
+#     runs-on: ubuntu-latest
+#     # Aquí conectamos con el Environment que creaste
+#     environment: production 
+#     steps:
+#       - name: Deploy to GCP 🚀
+#         run: |
+#           echo "Desplegando en Google Cloud Platform - Producción"
+#           echo "Estado: Exitoso"
+# name: Java Enterprise Pipeline Parte 1>> Build incluye construcción directa con maven/Gradle
 # on:
 #   workflow_call:
 #     inputs:
