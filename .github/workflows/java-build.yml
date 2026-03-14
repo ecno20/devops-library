@@ -8,31 +8,19 @@ on:
         default: '17'
 
 jobs:
-  # --- BLOQUE DE CONSTRUCCIÓN Y SEGURIDAD ---
   build-and-scan:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-
       - name: Set up JDK ☕
         uses: actions/setup-java@v4
         with:
           java-version: ${{ inputs.java-version }}
           distribution: 'temurin'
           cache: 'maven'
-
       - name: Build with Maven 🏗️
-        if: hashFiles('**/pom.xml') != ''
         run: mvn clean package -DskipTests
 
-      - name: Checkmarx Security Scan 🛡️
-        run: |
-          echo "Iniciando escaneo de seguridad..."
-          SCORE=100
-          echo "Análisis completado. Score: $SCORE/100"
-          if [ $SCORE -lt 80 ]; then exit 1; fi
-
-  # --- BLOQUE DE DESPLIEGUE A QA (AUTOMÁTICO EN STAGING) ---
   deploy-to-qa:
     needs: build-and-scan
     if: github.ref == 'refs/heads/staging'
@@ -41,21 +29,78 @@ jobs:
     steps:
       - name: Deploy to GCP QA 🧪
         run: |
-          echo "Conectando a GCP Project: QA-PROJECT-123"
-          echo "Desplegando Microservicio en entorno de Pruebas..."
-          echo "URL: https://qa.saludoservice.com"
+          echo "Conectando al proyecto: ${{ vars.GCP_PROJECT_ID }}"
+          echo "Desplegando en QA..."
 
-  # --- BLOQUE DE DESPLIEGUE A PRODUCCIÓN (MANUAL EN MAIN) ---
   deploy-to-prod:
     needs: build-and-scan
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
     steps:
-      - name: Deploy to GCP 🚀
+      - name: Deploy to GCP PROD 🚀
         run: |
-          echo "Desplegando en Google Cloud Platform - Producción"
-          echo "Estado: Exitoso"
+          echo "Conectando al proyecto: ${{ vars.GCP_PROJECT_ID }}"
+          echo "Desplegando en Producción..."
+# name: Java Standard CI/CD Parte 3>>Configuración de Variables env. esto con el fin de que el pipe
+#Tome las variables dependiendo del ambiente en el que se encuentre (Prod. QA.)
+
+# on:
+#   workflow_call:
+#     inputs:
+#       java-version:
+#         type: string
+#         default: '17'
+
+# jobs:
+#   # --- BLOQUE DE CONSTRUCCIÓN Y SEGURIDAD ---
+#   build-and-scan:
+#     runs-on: ubuntu-latest
+#     steps:
+#       - uses: actions/checkout@v4
+
+#       - name: Set up JDK ☕
+#         uses: actions/setup-java@v4
+#         with:
+#           java-version: ${{ inputs.java-version }}
+#           distribution: 'temurin'
+#           cache: 'maven'
+
+#       - name: Build with Maven 🏗️
+#         if: hashFiles('**/pom.xml') != ''
+#         run: mvn clean package -DskipTests
+
+#       - name: Checkmarx Security Scan 🛡️
+#         run: |
+#           echo "Iniciando escaneo de seguridad..."
+#           SCORE=100
+#           echo "Análisis completado. Score: $SCORE/100"
+#           if [ $SCORE -lt 80 ]; then exit 1; fi
+
+#   # --- BLOQUE DE DESPLIEGUE A QA (AUTOMÁTICO EN STAGING) ---
+#   deploy-to-qa:
+#     needs: build-and-scan
+#     if: github.ref == 'refs/heads/staging'
+#     runs-on: ubuntu-latest
+#     environment: staging
+#     steps:
+#       - name: Deploy to GCP QA 🧪
+#         run: |
+#           echo "Conectando a GCP Project: QA-PROJECT-123"
+#           echo "Desplegando Microservicio en entorno de Pruebas..."
+#           echo "URL: https://qa.saludoservice.com"
+
+#   # --- BLOQUE DE DESPLIEGUE A PRODUCCIÓN (MANUAL EN MAIN) ---
+#   deploy-to-prod:
+#     needs: build-and-scan
+#     if: github.ref == 'refs/heads/main'
+#     runs-on: ubuntu-latest
+#     environment: production
+#     steps:
+#       - name: Deploy to GCP 🚀
+#         run: |
+#           echo "Desplegando en Google Cloud Platform - Producción"
+#           echo "Estado: Exitoso"
 # name: Java Standard CI/CD Parte 2>> incluye construcción más autorización en Prod
 
 # on:
