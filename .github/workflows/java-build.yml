@@ -21,12 +21,42 @@ jobs:
       - name: Build with Maven 🏗️
         run: mvn clean package -DskipTests
 
+      # NUEVO PASO: Guardar el archivo .jar generado
+      - name: Upload Build Artifact 📤
+        uses: actions/upload-artifact@v4
+        with:
+          name: java-app-package
+          path: target/*.jar  # Maven guarda el resultado aquí
+          retention-days: 1   # Solo lo necesitamos para el flujo actual
+  # build-and-scan: <<se sustituye este job, se pretende con el job superior
+  # hacer copilación y guardar el archivo .jar para copilación en multiples entornos (QA, PROD, DEV)
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - name: Set up JDK ☕
+  #       uses: actions/setup-java@v4
+  #       with:
+  #         java-version: ${{ inputs.java-version }}
+  #         distribution: 'temurin'
+  #         cache: 'maven'
+  #     - name: Build with Maven 🏗️
+  #       run: mvn clean package -DskipTests
+
   deploy-to-qa:
     needs: build-and-scan
     if: github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     environment: staging
     steps:
+      - name: Download Build Artifact 📥
+        uses: actions/download-artifact@v4
+        with:
+          name: java-app-package
+          
+      - name: Verify Artifact 🔍
+        run: ls -R  # Verificamos que el .jar esté presente
+        
+      # ... (aquí se continua los pasos de echo actuales)
       - name: Deploy to GCP QA 🧪
         run: |
           echo "Conectando al proyecto: ${{ vars.GCP_PROJECT_ID }}"
@@ -38,6 +68,15 @@ jobs:
     runs-on: ubuntu-latest
     environment: production
     steps:
+      - name: Download Build Artifact 📥
+        uses: actions/download-artifact@v4
+        with:
+          name: java-app-package
+          
+      - name: Verify Artifact 🔍
+        run: ls -R  # Verificamos que el .jar esté presente
+        
+      # ... (aquí se continua los pasos de echo actuales) 
       - name: Deploy to GCP PROD 🚀
         run: |
           echo "Conectando al proyecto: ${{ vars.GCP_PROJECT_ID }}"
