@@ -18,6 +18,11 @@ jobs:
           java-version: ${{ inputs.java-version }}
           distribution: 'temurin'
           cache: 'maven'
+
+      # NUEVO PASO: Ejecución de pruebas unitarias << pruebas unitarias
+      - name: Run Unit Tests 📋
+        run: mvn test
+
       - name: Build with Maven 🏗️
         run: mvn clean package -DskipTests
 
