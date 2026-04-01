@@ -6,6 +6,11 @@ on:
       java-version:
         type: string
         default: '17'
+# Añadir esto a nivel de raíz (antes de 'jobs:')
+permissions:
+  contents: read
+  checks: write      # <--- Este permite crear el reporte visual
+  pull-requests: write # Permite comentar en el PR        
 
 jobs:
   build-and-scan:
