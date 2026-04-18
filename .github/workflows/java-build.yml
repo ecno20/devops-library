@@ -108,4 +108,13 @@ jobs:
           
           echo "Creando nueva etiqueta: $NEW_TAG"
           git tag $NEW_TAG
-          git push origin $NEW_TAG        
+          git push origin $NEW_TAG
+          # 3. NUEVO: Crear la Release de GitHub y adjuntar el .jar
+      - name: Create GitHub Release 🚀
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.tag_logic.outputs.new_tag }}
+          name: Release ${{ steps.tag_logic.outputs.new_tag }}
+          files: "*.jar" # Este paso sube todos los archivos .jar encontrados
+          draft: false
+          prerelease: false        
