@@ -6,6 +6,11 @@ on:
       java-version:
         type: string
         default: '17'
+# Declaramos el input para que sea aceptado desde el caller
+      version:
+        required: false
+        type: string
+        default: ''
   workflow_dispatch: # Permite la ejecución manual
     inputs:
       version:
