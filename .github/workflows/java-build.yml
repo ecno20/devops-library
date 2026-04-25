@@ -6,6 +6,12 @@ on:
       java-version:
         type: string
         default: '17'
+  workflow_dispatch: # Permite la ejecución manual
+    inputs:
+      version:
+        description: 'Tag de la versión a la que se desea volver (ej: v1.0.1)'
+        required: true
+        type: string     
 # Se añaden los permisos a nivel de raíz (antes de 'jobs:')
 permissions:
   #contents: read # <--- Se deja comentado para seguimiento previo a generación de Tags
@@ -99,17 +105,37 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: java-app-package
-# Paso 2. Lógica de incremento de Tag (Actualización del paso anterior)
-      - name: Generate Tag 🏷️
+# Paso 2 (Actualizado). Lógica de incremento, limpieza y busqueda de tag más alto          
+      - name: Sync and Generate Tag 🏷️
         id: tag_logic
         run: |
-            LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
-            VERSION_PARTS=(${LATEST_TAG//./ })
-            PATCH=$((VERSION_PARTS[2] + 1))
-            NEW_TAG="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH"
-            echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
-            git tag $NEW_TAG
-            git push origin $NEW_TAG
+          # 1. Limpieza de etiquetas huérfanas (Enfoque 2)
+          git fetch --prune --tags --force
+          
+          # 2. Buscar el tag más alto en el servidor (Enfoque 1)
+          LATEST_TAG=$(git tag -l "v*" | sort -V | tail -n1)
+          
+          if [ -z "$LATEST_TAG" ]; then
+            LATEST_TAG="v1.0.0"
+          fi
+          
+          # 3. Incrementar parche
+          VERSION_PARTS=(${LATEST_TAG//./ })
+          PATCH=$((VERSION_PARTS[2] + 1))
+          NEW_TAG="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH"
+          
+          echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT    
+#  Paso 2. Lógica de incremento de Tag (Actualización del paso anterior)
+#       - name: Generate Tag 🏷️
+#         id: tag_logic
+#         run: |
+#             LATEST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v1.0.0")
+#             VERSION_PARTS=(${LATEST_TAG//./ })
+#             PATCH=$((VERSION_PARTS[2] + 1))
+#             NEW_TAG="${VERSION_PARTS[0]}.${VERSION_PARTS[1]}.$PATCH"
+#             echo "new_tag=$NEW_TAG" >> $GITHUB_OUTPUT
+#             git tag $NEW_TAG
+#             git push origin $NEW_TAG
 # Paso 3. (NUEVO): Crear la Release de GitHub y adjuntar el .jar            
       - name: Create GitHub Release 🚀
         uses: softprops/action-gh-release@v2
@@ -119,3 +145,18 @@ jobs:
           files: "*.jar" # Este paso sube todos los archivos .jar encontrados
           draft: false
           prerelease: false        
+  rollback:
+    if: github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download Specific Release 📦
+        uses: robinraju/release-downloader@v1.10
+        with:
+          tag: ${{ github.event.inputs.version }}
+          fileName: "*.jar"
+      
+      - name: Deploy Rollback Version 🚀
+        run: |
+          echo "Iniciando Rollback a la versión ${{ github.event.inputs.version }}"
+          echo "Desplegando binario recuperado en el entorno de Producción..."
+          # Próximamente aquí irían los comandos de despliegue en nube        
