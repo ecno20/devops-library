@@ -61,7 +61,10 @@ jobs:
             echo "Logs limpios y validados con éxito. Transición segura. ✅"
           fi  
 #Fin de la actualización
-      # NUEVO PASO: Guardar el archivo .jar generado
+#Update->>26-06-2026
+#Se añade Job que tomará el .jar y se autenticará en el registro de contenedores y 
+#ejecutará la construcción de la imagen
+      # Guardar el archivo .jar generado
       - name: Upload Build Artifact 📤
         uses: actions/upload-artifact@v4
         with:
