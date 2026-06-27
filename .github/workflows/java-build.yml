@@ -61,9 +61,7 @@ jobs:
             echo "Logs limpios y validados con éxito. Transición segura. ✅"
           fi  
 #Fin de la actualización
-#Update->>26-06-2026
-#Se añade Job que tomará el .jar y se autenticará en el registro de contenedores y 
-#ejecutará la construcción de la imagen
+
       # Guardar el archivo .jar generado
       - name: Upload Build Artifact 📤
         uses: actions/upload-artifact@v4
@@ -71,7 +69,8 @@ jobs:
           name: java-app-package
           path: target/*.jar  # Maven guarda el resultado aquí
           retention-days: 1   # Solo lo necesitamos para el flujo actual          
-
+#Update->>27-06-2026
+#Se añade Job que tomará el .jar y se autenticará en el registro de contenedores y ejecutará la construcción de la imagen
   deploy-to-qa:
     needs: build-and-scan
     if: github.ref == 'refs/heads/staging'
