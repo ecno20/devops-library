@@ -69,8 +69,36 @@ jobs:
           name: java-app-package
           path: target/*.jar  # Maven guarda el resultado aquí
           retention-days: 1   # Solo lo necesitamos para el flujo actual          
-#Update->>27-06-2026
+#Update->>30-06-2026
 #Se añade Job que tomará el .jar y se autenticará en el registro de contenedores y ejecutará la construcción de la imagen
+  build-and-push-container:
+      needs: [log-audit] # Espera a que los logs pasen la auditoría previa
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
+      runs-on: ubuntu-latest
+      steps:
+        - uses: actions/checkout@v4
+
+        - name: Set up JDK 17 ☕
+          uses: actions/setup-java@v4
+          with:
+            java-version: '17'
+            distribution: 'temurin'
+            cache: 'maven'
+
+        # Mecanismo seguro de autenticación en Docker Hub
+        - name: Log in to Docker Hub 🐳
+          uses: docker/login-action@v3
+          with:
+            username: ${{ secrets.DOCKER_HUB_USERNAME }}
+            password: ${{ secrets.DOCKER_HUB_PASSWORD }}
+
+        # Compilación e inyección directa a Docker Hub pasando las variables necesarias
+        - name: Build Container Image with Jib 🚀
+          run: |
+            mvn compile jib:build \
+              -DDOCKER_HUB_USERNAME=${{ secrets.DOCKER_HUB_USERNAME }} \
+              -DIMAGE_TAG=${{ needs.create-tag.outputs.new_tag || 'latest' }}
+#Fin de Update->>30-06-2026
   deploy-to-qa:
     needs: build-and-scan
     if: github.ref == 'refs/heads/staging'
