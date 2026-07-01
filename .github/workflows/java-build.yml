@@ -169,7 +169,8 @@ jobs:
   #Update->>30-06-2026
 #Se añade Job que tomará el .jar y se autenticará en el registro de contenedores y ejecutará la construcción de la imagen
   build-and-push-container:
-      needs: [log-audit] # Espera a que los logs pasen la auditoría previa
+#      needs: [log-audit build-and-scan] # Espera a que los logs pasen la auditoría previa
+      needs: [build-and-scan]
       if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
       runs-on: ubuntu-latest
       steps:
