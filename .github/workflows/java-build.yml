@@ -170,7 +170,7 @@ jobs:
 #Se añade Job que tomará el .jar y se autenticará en el registro de contenedores y ejecutará la construcción de la imagen
   build-and-push-container:
 #      needs: [log-audit build-and-scan] # Espera a que los logs pasen la auditoría previa
-      needs: [build-and-scan]
+      needs: [create-tag]
       if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging'
       runs-on: ubuntu-latest
       steps:
