@@ -172,7 +172,7 @@ jobs:
   #Update->>30-06-2026
   #Update->>18-07-2026 <<se agrega la solución nativa GHCR
 #Se añade Job que tomará el .jar y se autenticará en el registro de contenedores y ejecutará la construcción de la imagen
-build-and-push-container:
+  build-and-push-container:
     needs: [build-and-scan, create-tag]
     # Se ejecuta de forma segura en staging (con el build-and-scan) o en main (cuando create-tag finaliza)
     if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
