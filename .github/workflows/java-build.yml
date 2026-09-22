@@ -153,22 +153,62 @@ jobs:
           name: Release ${{ steps.tag_logic.outputs.new_tag }}
           files: "*.jar" # Este paso sube todos los archivos .jar encontrados
           draft: false
-          prerelease: false        
+          prerelease: false       
+# Update: 22-09-2026--> Integración de Rollback con container de Docker          
   rollback:
     if: github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write # Permiso requerido para actualizar tags en GHCR
     steps:
+      # 1. Conservamos la descarga del binario .jar clásico de la Release
       - name: Download Specific Release 📦
         uses: robinraju/release-downloader@v1.10
         with:
           tag: ${{ github.event.inputs.version }}
           fileName: "*.jar"
-      
-      - name: Deploy Rollback Version 🚀
+
+      # 2. Autenticación transparente en GHCR 🐙
+      - name: Log in to GHCR 🔑
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # 3. Pull de la versión estable y actualización de la etiqueta 'latest' 🔄
+      - name: Promote Version to Latest in GHCR 🚀
         run: |
-          echo "Iniciando Rollback a la versión ${{ github.event.inputs.version }}"
-          echo "Desplegando binario recuperado en el entorno de Producción..."
-          # Próximamente aquí irían los comandos de despliegue en nube        
+          IMAGE_BASE="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}"
+          TARGET_TAG="${{ github.event.inputs.version }}"
+          
+          echo "Iniciando Rollback..."
+          echo "Descargando imagen estable: $IMAGE_BASE:$TARGET_TAG"
+          docker pull $IMAGE_BASE:$TARGET_TAG
+          
+          echo "Re-etiquetando $TARGET_TAG como latest..."
+          docker tag $IMAGE_BASE:$TARGET_TAG $IMAGE_BASE:latest
+          
+          echo "Publicando actualización en GHCR..."
+          docker push $IMAGE_BASE:latest
+          
+          echo "Rollback completado con éxito a la versión $TARGET_TAG. ✅"         
+  # rollback:
+  #   if: github.event_name == 'workflow_dispatch'
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - name: Download Specific Release 📦
+  #       uses: robinraju/release-downloader@v1.10
+  #       with:
+  #         tag: ${{ github.event.inputs.version }}
+  #         fileName: "*.jar"
+      
+  #     - name: Deploy Rollback Version 🚀
+  #       run: |
+  #         echo "Iniciando Rollback a la versión ${{ github.event.inputs.version }}"
+  #         echo "Desplegando binario recuperado en el entorno de Producción..."
+  #         # Próximamente aquí irían los comandos de despliegue en nube        
   #Update->>30-06-2026
   #Update->>18-07-2026 <<se agrega la solución nativa GHCR
 #Se añade Job que tomará el .jar y se autenticará en el registro de contenedores y ejecutará la construcción de la imagen
