@@ -244,6 +244,38 @@ jobs:
           tags: |
             ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ needs.create-tag.outputs.new_tag || 'staging-latest' }}
             ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:latest
+# Actualización-->18-10-2026>> se agrega un job que descargará la imagen recién creada desde GHCR y la analizará con Trivy
+  security-scan:
+    needs: build-and-push-container
+    if: always() && (github.ref == 'refs/heads/main' || github.ref == 'refs/heads/staging')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: read
+      security-events: write # Permite publicar hallazgos en la pestaña Security de GitHub
+    steps:
+      - name: Iniciar sesión en GHCR 🐙
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Descargar imagen para escaneo 📥
+        run: |
+          IMAGE_TAG="${{ needs.create-tag.outputs.new_tag || 'staging-latest' }}"
+          IMAGE_PATH="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${IMAGE_TAG}"
+          docker pull $IMAGE_PATH
+
+      - name: Escaneo de Vulnerabilidades con Trivy 🛡️
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: 'ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ needs.create-tag.outputs.new_tag || "staging-latest" }}'
+          format: 'table'
+          exit-code: '0' # Cambia a '1' en producción si deseas bloquear el pipeline si hay vulnerabilidades CRITICAL
+          ignore-unfixed: true
+          vuln-type: 'os,library'
+          severity: 'CRITICAL,HIGH'          
 #Update: Se agrega y se actualiza creación de container registry para cada repo asociado 21-07-2026
       # - name: Construir y subir imagen Docker 🐳
       #   uses: docker/build-push-action@v6
