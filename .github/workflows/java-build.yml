@@ -261,21 +261,15 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Descargar imagen para escaneo 📥
-        run: |
-          IMAGE_TAG='${{ needs.create-tag.outputs.new_tag || 'staging-latest' }}'
-          IMAGE_PATH='ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${IMAGE_TAG}'
-          docker pull $IMAGE_PATH
-
       - name: Escaneo de Vulnerabilidades con Trivy 🛡️
         uses: aquasecurity/trivy-action@master
         with:
           image-ref: 'ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${{ needs.create-tag.outputs.new_tag || 'staging-latest' }}'
           format: 'table'
-          exit-code: '0' # Cambia a '1' en producción si deseas bloquear el pipeline si hay vulnerabilidades CRITICAL
+          exit-code: '0' # Cambia a '1' para bloquear el pipeline si hay vulnerabilidades CRITICAL
           ignore-unfixed: true
           vuln-type: 'os,library'
-          severity: 'CRITICAL,HIGH'
+          severity: 'CRITICAL,HIGH'        
 #Update: Se agrega y se actualiza creación de container registry para cada repo asociado 21-07-2026
       # - name: Construir y subir imagen Docker 🐳
       #   uses: docker/build-push-action@v6
