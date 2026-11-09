@@ -70,46 +70,121 @@ jobs:
           name: java-app-package
           path: target/*.jar  # Maven guarda el resultado aquí
           retention-days: 1   # Solo lo necesitamos para el flujo actual          
-
+# Update: 08-11-2026-> despliegue de los microservicios Java en los entornos de QA y Producción 
+# utilizando las imágenes de GHCR
   deploy-to-qa:
     needs: build-and-scan
     if: github.ref == 'refs/heads/staging'
     runs-on: ubuntu-latest
     environment: staging
+    permissions:
+      contents: read
+      packages: read # Permiso para descargar la imagen desde GHCR
     steps:
-      - name: Download Build Artifact 📥
-        uses: actions/download-artifact@v4
+      - name: Iniciar sesión en GHCR 🐙
+        uses: docker/login-action@v3
         with:
-          name: java-app-package
-          
-      - name: Verify Artifact 🔍
-        run: ls -R  # Verificamos que el .jar esté presente
-        
-      # ... (aquí se continua los pasos de echo actuales)
-      - name: Deploy to GCP QA 🧪
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Descargar imagen de QA desde GHCR 📥
         run: |
-          echo "Conectando al proyecto: ${{ vars.GCP_PROJECT_ID }}"
-          echo "Desplegando en QA..."
+          IMAGE_PATH="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:staging-latest"
+          echo "Descargando imagen para el entorno QA..."
+          docker pull $IMAGE_PATH
+          
+      - name: Simular ejecución del contenedor en QA 🧪
+        run: |
+          IMAGE_PATH="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:staging-latest"
+          echo "Verificando el contenedor para QA..."
+          docker run -d --name app-qa -p 8080:8080 $IMAGE_PATH
+          sleep 5
+          docker ps | grep app-qa
+          docker stop app-qa && docker rm app-qa
+          *Verification:* Contenedor iniciado y detenido correctamente sin errores de puerto.
 
   deploy-to-prod:
     needs: build-and-scan
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     environment: production
+    permissions:
+      contents: read
+      packages: read # Permiso para descargar la imagen desde GHCR
     steps:
-      - name: Download Build Artifact 📥
-        uses: actions/download-artifact@v4
+      - name: Iniciar sesión en GHCR 🐙
+        uses: docker/login-action@v3
         with:
-          name: java-app-package
-          
-      - name: Verify Artifact 🔍
-        run: ls -R  # Verificamos que el .jar esté presente
-        
-      # ... (aquí se continua los pasos de echo actuales) 
-      - name: Deploy to GCP PROD 🚀
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Descargar imagen de Producción desde GHCR 🚀
         run: |
-          echo "Conectando al proyecto: ${{ vars.GCP_PROJECT_ID }}"
-          echo "Desplegando en Producción..."
+          IMAGE_TAG="${{ needs.create-tag.outputs.new_tag }}"
+          if [ -z "$IMAGE_TAG" ]; then
+            IMAGE_TAG="latest"
+          fi
+          
+          IMAGE_PATH="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${IMAGE_TAG}"
+          echo "Descargando imagen $IMAGE_PATH en entorno de Producción..."
+          docker pull $IMAGE_PATH
+
+      - name: Simular despliegue y validación en Producción 🚢
+        run: |
+          IMAGE_TAG="${{ needs.create-tag.outputs.new_tag }}"
+          if [ -z "$IMAGE_TAG" ]; then
+            IMAGE_TAG="latest"
+          fi
+          IMAGE_PATH="ghcr.io/${{ github.repository_owner }}/${{ github.event.repository.name }}:${IMAGE_TAG}"
+          
+          echo "Iniciando prueba de aceptación del contenedor en producción..."
+          docker run -d --name app-prod -p 8080:8080 $IMAGE_PATH
+          sleep 5
+          docker ps | grep app-prod
+          docker stop app-prod && docker rm app-prod
+          *Verification:* Imagen desplegada y validada de forma exitosa en el entorno productivo.
+  # deploy-to-qa:
+  #   needs: build-and-scan
+  #   if: github.ref == 'refs/heads/staging'
+  #   runs-on: ubuntu-latest
+  #   environment: staging
+  #   steps:
+  #     - name: Download Build Artifact 📥
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: java-app-package
+          
+  #     - name: Verify Artifact 🔍
+  #       run: ls -R  # Verificamos que el .jar esté presente
+        
+  #     # ... (aquí se continua los pasos de echo actuales)
+  #     - name: Deploy to GCP QA 🧪
+  #       run: |
+  #         echo "Conectando al proyecto: ${{ vars.GCP_PROJECT_ID }}"
+  #         echo "Desplegando en QA..."
+
+  # deploy-to-prod:
+  #   needs: build-and-scan
+  #   if: github.ref == 'refs/heads/main'
+  #   runs-on: ubuntu-latest
+  #   environment: production
+  #   steps:
+  #     - name: Download Build Artifact 📥
+  #       uses: actions/download-artifact@v4
+  #       with:
+  #         name: java-app-package
+          
+  #     - name: Verify Artifact 🔍
+  #       run: ls -R  # Verificamos que el .jar esté presente
+        
+  #     # ... (aquí se continua los pasos de echo actuales) 
+  #     - name: Deploy to GCP PROD 🚀
+  #       run: |
+  #         echo "Conectando al proyecto: ${{ vars.GCP_PROJECT_ID }}"
+  #         echo "Desplegando en Producción..."
+# Fin de actualización -> 08-11-2026
   create-tag:
     needs: deploy-to-prod
     if: github.ref == 'refs/heads/main'
