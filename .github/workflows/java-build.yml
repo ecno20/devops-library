@@ -102,7 +102,7 @@ jobs:
           sleep 5
           docker ps | grep app-qa
           docker stop app-qa && docker rm app-qa
-          *Verification:* Contenedor iniciado y detenido correctamente sin errores de puerto.
+          echo "*Verification:* Contenedor iniciado y detenido correctamente sin errores de puerto."
 
   deploy-to-prod:
     needs: build-and-scan
@@ -144,7 +144,7 @@ jobs:
           sleep 5
           docker ps | grep app-prod
           docker stop app-prod && docker rm app-prod
-          *Verification:* Imagen desplegada y validada de forma exitosa en el entorno productivo.
+          echo "*Verification:* Imagen desplegada y validada de forma exitosa en el entorno productivo."
   # deploy-to-qa:
   #   needs: build-and-scan
   #   if: github.ref == 'refs/heads/staging'
